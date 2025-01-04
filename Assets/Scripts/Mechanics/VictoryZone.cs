@@ -14,8 +14,10 @@ namespace Platformer.Mechanics
             var p = collider.gameObject.GetComponent<PlayerController>();
             if (p != null)
             {
-                var ev = Schedule<PlayerEnteredVictoryZone>();
-                ev.victoryZone = this;
+                //var ev = Schedule<PlayerEnteredVictoryZone>();
+                //ev.victoryZone = this;
+
+                SceneController.instance.NextLevel();
             }
         }
     }
