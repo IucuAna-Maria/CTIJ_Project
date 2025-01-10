@@ -27,8 +27,11 @@ namespace Platformer.Mechanics
         /// </summary>
         public float jumpTakeOffSpeed = 7;
 
+        //for double-jump
+        private int jumpCount = 0; // Tracks the number of jumps performed
+        private const int maxJumpCount = 2; // Maximum allowed jumps (double jump)
+
         public JumpState jumpState = JumpState.Grounded;
-        private bool stopJump;
         /*internal new*/ public Collider2D collider2d;
         /*internal new*/ public AudioSource audioSource;
         public Health health;
@@ -56,21 +59,25 @@ namespace Platformer.Mechanics
             if (controlEnabled)
             {
                 move.x = Input.GetAxis("Horizontal");
-                if (jumpState == JumpState.Grounded && Input.GetButtonDown("Jump"))
-                    jumpState = JumpState.PrepareToJump;
-                else if (Input.GetButtonUp("Jump"))
+
+                // Allow jumping if the player is grounded or has jumps left
+                if (Input.GetButtonDown("Jump"))
                 {
-                    stopJump = true;
-                    Schedule<PlayerStopJump>().player = this;
+                    if (jumpState == JumpState.Grounded || jumpCount < maxJumpCount)
+                    {
+                        jumpState = JumpState.PrepareToJump;
+                    }
                 }
             }
             else
             {
                 move.x = 0;
             }
+
             UpdateJumpState();
             base.Update();
         }
+
 
         void UpdateJumpState()
         {
@@ -78,10 +85,14 @@ namespace Platformer.Mechanics
             switch (jumpState)
             {
                 case JumpState.PrepareToJump:
-                    jumpState = JumpState.Jumping;
-                    jump = true;
-                    stopJump = false;
+                    if (jumpCount < maxJumpCount)
+                    {
+                        jumpState = JumpState.Jumping;
+                        jump = true;
+                        jumpCount++; // Increment the jump count
+                    }
                     break;
+
                 case JumpState.Jumping:
                     if (!IsGrounded)
                     {
@@ -89,6 +100,7 @@ namespace Platformer.Mechanics
                         jumpState = JumpState.InFlight;
                     }
                     break;
+
                 case JumpState.InFlight:
                     if (IsGrounded)
                     {
@@ -96,26 +108,20 @@ namespace Platformer.Mechanics
                         jumpState = JumpState.Landed;
                     }
                     break;
+
                 case JumpState.Landed:
                     jumpState = JumpState.Grounded;
+                    jumpCount = 0; // Reset the jump count when the player lands
                     break;
             }
         }
 
         protected override void ComputeVelocity()
         {
-            if (jump && IsGrounded)
+            if (jump)
             {
                 velocity.y = jumpTakeOffSpeed * model.jumpModifier;
                 jump = false;
-            }
-            else if (stopJump)
-            {
-                stopJump = false;
-                if (velocity.y > 0)
-                {
-                    velocity.y = velocity.y * model.jumpDeceleration;
-                }
             }
 
             if (move.x > 0.01f)
