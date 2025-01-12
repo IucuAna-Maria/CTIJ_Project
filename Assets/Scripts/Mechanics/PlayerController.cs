@@ -5,6 +5,8 @@ using Platformer.Gameplay;
 using static Platformer.Core.Simulation;
 using Platformer.Model;
 using Platformer.Core;
+using System;
+using UnityEngine.SceneManagement;
 
 namespace Platformer.Mechanics
 {
@@ -21,19 +23,30 @@ namespace Platformer.Mechanics
         /// <summary>
         /// Max horizontal speed of the player.
         /// </summary>
-        public float maxSpeed = 7;
+        public float maxSpeed = 5f;
         /// <summary>
         /// Initial jump velocity at the start of a jump.
         /// </summary>
-        public float jumpTakeOffSpeed = 7;
+        public float jumpTakeOffSpeed = 7f;
 
-        //for double-jump
-        private int jumpCount = 0; // Tracks the number of jumps performed
-        private const int maxJumpCount = 2; // Maximum allowed jumps (double jump)
+        // For double-jump
+        private int jumpCount = 0;            // Numarul de salturi efectuate
+        private const int maxJumpCount = 2;   // Maximul de salturi permise (double jump)
+
+        // ---------------------- DASH ----------------------
+        [Header("Dash Settings")]
+        public float dashSpeed = 10f;         // Viteza pe durata dash-ului
+        public float dashDuration = 0.5f;       // Durata in secunde a dash-ului
+
+        private float dashTimeRemaining;      // Cronometru pentru dash
+        private bool isDashing;               // Indica daca jucatorul este in dash
+        private bool usedAirDash;             // Indica daca s-a folosit dash-ul in aer
 
         public JumpState jumpState = JumpState.Grounded;
-        /*internal new*/ public Collider2D collider2d;
-        /*internal new*/ public AudioSource audioSource;
+        /*internal new*/
+        public Collider2D collider2d;
+        /*internal new*/
+        public AudioSource audioSource;
         public Health health;
         public bool controlEnabled = true;
 
@@ -54,6 +67,8 @@ namespace Platformer.Mechanics
             animator = GetComponent<Animator>();
         }
 
+       
+
         protected override void Update()
         {
             if (controlEnabled)
@@ -68,16 +83,84 @@ namespace Platformer.Mechanics
                         jumpState = JumpState.PrepareToJump;
                     }
                 }
+
+                // Dash la apasarea tastei LeftShift (sau o alta tasta, dupa preferinte)
+                if (Input.GetKeyDown(KeyCode.LeftShift))
+                {
+                    AttemptDash();
+                }
             }
             else
             {
                 move.x = 0;
             }
 
+            // Actualizam starea de dash (daca este activ)
+            UpdateDashState();
+
+            // Actualizam starea de salt
             UpdateJumpState();
+
             base.Update();
         }
 
+        /// <summary>
+        /// Initiaza un dash daca jucatorul are dreptul (la sol sau nu a folosit inca dash-ul in aer).
+        /// </summary>
+        void AttemptDash()
+        {
+            // Verificam daca nu este deja in dash
+            if (!isDashing)
+            {
+                // Poti da dash daca esti la sol...
+                if (IsGrounded)
+                {
+                    StartDash();
+                }
+                else
+                {
+                    // ... sau daca nu ai folosit inca dash-ul in aer
+                    if (!usedAirDash)
+                    {
+                        StartDash();
+                        usedAirDash = true; // Marcam ca am folosit dash-ul in aer
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Porneste efectiv dash-ul, setand cronometru si flag-ul de dash.
+        /// </summary>
+        void StartDash()
+        {
+            isDashing = true;
+            dashTimeRemaining = dashDuration;
+        }
+
+        /// <summary>
+        /// Actualizeaza starea de dash, reducand timpul ramas si resetand viteza la final.
+        /// </summary>
+        void UpdateDashState()
+        {
+            if (isDashing)
+            {
+                dashTimeRemaining -= Time.deltaTime;
+
+                if (dashTimeRemaining <= 0)
+                {
+                    // S-a terminat dash-ul
+                    isDashing = false;
+                    // Revenim la viteza normala
+                    maxSpeed = 5f;
+                }
+                else
+                {
+                    // Cat timp dureaza dash-ul, viteza e setata la dashSpeed
+                    maxSpeed = dashSpeed;
+                }
+            }
+        }
 
         void UpdateJumpState()
         {
@@ -111,7 +194,8 @@ namespace Platformer.Mechanics
 
                 case JumpState.Landed:
                     jumpState = JumpState.Grounded;
-                    jumpCount = 0; // Reset the jump count when the player lands
+                    jumpCount = 0;
+                    usedAirDash = false; // Resetam dash-ul in aer
                     break;
             }
         }
@@ -132,6 +216,7 @@ namespace Platformer.Mechanics
             animator.SetBool("grounded", IsGrounded);
             animator.SetFloat("velocityX", Mathf.Abs(velocity.x) / maxSpeed);
 
+            // targetVelocity defineste viteza orizontala pe care ne-o dorim
             targetVelocity = move * maxSpeed;
         }
 
@@ -143,5 +228,9 @@ namespace Platformer.Mechanics
             InFlight,
             Landed
         }
+
+        
+
+
     }
 }

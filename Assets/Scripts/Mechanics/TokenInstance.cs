@@ -1,4 +1,6 @@
+using Platformer.Core;
 using Platformer.Gameplay;
+using Platformer.Model;
 using UnityEngine;
 using static Platformer.Core.Simulation;
 
@@ -53,6 +55,12 @@ namespace Platformer.Mechanics
             sprites = collectedAnimation;
             if (controller != null)
                 collected = true;
+
+            // Increase the player's collected tokens count in the PlatformerModel
+            var model = Simulation.GetModel<PlatformerModel>();
+            model.collectedTokens++;  // Increment the number of collected tokens
+            Debug.Log("Coins Collected: " + model.collectedTokens);
+
             //send an event into the gameplay system to perform some behaviour.
             var ev = Schedule<PlayerTokenCollision>();
             ev.token = this;

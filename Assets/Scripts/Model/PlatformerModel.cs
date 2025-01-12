@@ -38,5 +38,9 @@ namespace Platformer.Model
         /// </summary>
         public float jumpDeceleration = 0.5f;
 
+        public Vector3 lastCheckpointPosition = Vector3.zero;
+
+        public int collectedTokens = 0;
+
     }
 }

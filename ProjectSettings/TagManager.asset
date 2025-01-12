@@ -6,6 +6,7 @@ TagManager:
   tags:
   - TutorialRequirement
   - Enemy
+  - Checkpoint
   layers:
   - Default
   - TransparentFX
@@ -14,8 +15,8 @@ TagManager:
   - Water
   - UI
   - Enemy
-  - 
-  - 
+  - Level
+  - Player
   - 
   - 
   - 
